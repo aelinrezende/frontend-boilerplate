@@ -1,100 +1,103 @@
-import type { AxiosError, AxiosResponse } from "axios";
+import type { AxiosResponse } from "axios";
 import { api } from "config/axios";
-import theme from "config/theme";
-import type { DTO, NextPaginateResponse } from "interface/_crud";
-import { _handleErrorMessage } from "utils/error";
-
-import type { UseToastOptions } from "@chakra-ui/react";
-import { createStandaloneToast } from "@chakra-ui/react";
-
-const { toast } = createStandaloneToast({
-  theme,
-});
-
-const _baseErrorToastProps: UseToastOptions = {
-  title: "Erro.",
-  position: "bottom-right",
-  status: "error",
-  duration: 9000,
-  isClosable: true,
-};
-
-const _baseSuccessToastProps: UseToastOptions = {
-  title: "Sucesso.",
-  position: "bottom-right",
-  status: "success",
-  duration: 9000,
-  isClosable: true,
-};
+import type { CrudDTO, NextPaginateResponse } from "interface/crud";
+import { apiToastHandler } from "utils";
 
 export class Crud<Entity extends Record<string, unknown>> {
   constructor(private controller: string) {}
 
-  async createOne(payload: Entity): Promise<Entity> {
+  async createOne({
+    payload,
+    onError,
+    shouldToast = true,
+    onSuccess,
+  }: CrudDTO<Entity>): Promise<Entity> {
     try {
       const { data: response } = await api.post<Entity, AxiosResponse<Entity>>(
         this.controller,
         payload
       );
 
-      toast({
-        ..._baseSuccessToastProps,
-        description: "Criação realizada com sucesso.",
-      });
+      if (shouldToast) {
+        apiToastHandler({
+          callback: onSuccess,
+          defaultMessage: "Criação realizada com sucesso.",
+        });
+      }
 
       return response;
-    } catch (err) {
-      console.error(err);
-      toast({
-        ..._baseErrorToastProps,
-        description: _handleErrorMessage(
-          (err as AxiosError).response?.status as number,
-          "Falha ao criar."
-        ),
-      });
+    } catch (error) {
+      if (shouldToast) {
+        apiToastHandler({
+          behavior: "error",
+          callback: onError,
+          defaultMessage: "Falha ao criar.",
+          error,
+        });
+      }
 
-      throw new Error("Falha ao criar.");
+      throw error;
     }
   }
 
-  async patchOne({ id, data }: DTO<Entity>) {
+  async patchOne({
+    id,
+    payload,
+    shouldToast = true,
+    onSuccess,
+    onError,
+  }: CrudDTO<Entity>) {
     try {
-      await api.patch<Entity>(`${this.controller}/${id}`, data);
+      await api.patch<Entity>(`${this.controller}/${id}`, payload);
 
-      toast({
-        ..._baseSuccessToastProps,
-        description: "Atualização realizada com sucesso.",
-      });
-    } catch (err) {
-      console.error(err);
+      if (shouldToast) {
+        apiToastHandler({
+          callback: onSuccess,
+          defaultMessage: "Atualização realizada com sucesso.",
+        });
+      }
+    } catch (error) {
+      if (shouldToast) {
+        apiToastHandler({
+          behavior: "error",
+          callback: onError,
+          defaultMessage: "Falha ao atualizar conteúdo",
+          error,
+        });
+      }
 
-      toast({
-        ..._baseErrorToastProps,
-        description: "Falha ao atualizar conteúdo.",
-      });
-
-      throw new Error("Falha ao atualizar conteúdo.");
+      throw error;
     }
   }
 
-  async getOne({ id }: DTO<Entity>): Promise<Entity> {
+  async getOne({
+    id,
+    shouldToast = true,
+    onError,
+  }: Omit<CrudDTO<Entity>, "onSuccess">): Promise<Entity> {
     try {
       return (await api.get<Entity>(`${this.controller}/${id}`)).data;
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      if (shouldToast) {
+        apiToastHandler({
+          behavior: "error",
+          callback: onError,
+          defaultMessage: "Falha ao obter conteúdo.",
+          error,
+        });
+      }
 
-      toast({
-        ..._baseErrorToastProps,
-        description: "Falha ao obter conteúdo.",
-      });
-
-      throw new Error("Falha ao obter conteúdo.");
+      throw error;
     }
   }
 
   async getMany({
     requestQuery,
-  }: DTO<Entity>): Promise<NextPaginateResponse<Entity>> {
+    shouldToast = true,
+    onError,
+  }: Omit<CrudDTO<Entity>, "onSuccess">): Promise<
+    NextPaginateResponse<Entity>
+  > {
     try {
       const { data: response } = await api.get<
         Entity[],
@@ -104,55 +107,70 @@ export class Crud<Entity extends Record<string, unknown>> {
       });
 
       return response;
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      if (shouldToast) {
+        apiToastHandler({
+          behavior: "error",
+          callback: onError,
+          defaultMessage: "Falha ao obter conteúdo.",
+          error,
+        });
+      }
 
-      toast({
-        ..._baseErrorToastProps,
-        description: "Falha ao obter conteúdo.",
-      });
-
-      throw new Error("Falha ao obter conteúdo.");
+      throw error;
     }
   }
 
-  async deleteOne({ id }: DTO<Entity>) {
+  async deleteOne({
+    id,
+    shouldToast = true,
+    onSuccess,
+    onError,
+  }: CrudDTO<Entity>): Promise<void> {
     try {
       await api.delete<Entity>(`${this.controller}/${id}`);
 
-      toast({
-        ..._baseSuccessToastProps,
-        description: "Deleção realizada com sucesso.",
-      });
-    } catch (err) {
-      console.error(err);
+      if (shouldToast) {
+        apiToastHandler({
+          callback: onSuccess,
+          defaultMessage: "Deleção realizada com sucesso.",
+        });
+      }
+    } catch (error) {
+      if (shouldToast) {
+        apiToastHandler({
+          behavior: "error",
+          callback: onError,
+          defaultMessage: "Falha ao deletar conteúdo.",
+          error,
+        });
+      }
 
-      toast({
-        ..._baseErrorToastProps,
-        description: "Falha ao deletar conteúdo.",
-      });
-
-      throw new Error("Falha ao deletar conteúdo.");
+      throw error;
     }
   }
 
-  async deleteAll() {
+  async deleteAll({ shouldToast = true, onSuccess, onError }: CrudDTO<Entity>) {
     try {
       await api.delete<Entity>(this.controller);
 
-      toast({
-        ..._baseSuccessToastProps,
-        description: "Deleção realizada com sucesso.",
-      });
-    } catch (err) {
-      console.error(err);
+      if (shouldToast) {
+        apiToastHandler({
+          callback: onSuccess,
+          defaultMessage: "Deleção realizada com sucesso.",
+        });
+      }
+    } catch (error) {
+      if (shouldToast) {
+        apiToastHandler({
+          behavior: "error",
+          callback: onError,
+          defaultMessage: "Falha ao deletar conteúdo.",
+          error,
+        });
+      }
 
-      toast({
-        ..._baseErrorToastProps,
-        description: "Falha ao deletar conteúdo.",
-      });
-
-      throw new Error("Falha ao deletar conteúdo.");
+      throw error;
     }
   }
 }
