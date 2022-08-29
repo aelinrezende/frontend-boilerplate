@@ -1,5 +1,5 @@
 export interface ApiToastHandlerParams {
-  callback: string | ((errors: unknown) => unknown) | undefined;
+  callback: string | ((status: number) => string) | undefined;
   defaultMessage: string;
   error?: unknown;
   behavior?: "success" | "error";
@@ -11,8 +11,8 @@ export interface CrudDTO<T> {
   id?: string;
   requestQuery?: { [key: string]: unknown };
   shouldToast?: boolean;
-  onError?: string | ((errors: unknown) => unknown);
-  onSuccess?: string | ((data: unknown) => unknown);
+  onError?: string | ((status: number) => string);
+  onSuccess?: string | (() => string);
 }
 
 export interface NextPaginateResponse<DataType = unknown> {
