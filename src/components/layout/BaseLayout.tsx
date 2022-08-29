@@ -15,6 +15,8 @@ export const BaseLayout = ({
     <Head>
       <title>{tabTitle}</title>
     </Head>
-    <Box>{children}</Box>
+    <Box p={"2rem"} h="100%">
+      {children}
+    </Box>
   </>
 );
